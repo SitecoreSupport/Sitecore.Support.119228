@@ -4,6 +4,8 @@
   using Sitecore.Analytics.Pipelines.InitializeTracker;
   using Sitecore.Diagnostics;
   using Sitecore.Sites;
+  using Sitecore.Xdb.Configuration;
+  using Sitecore.Analytics.Model;
 
   public class EnsureContext : InitializeTrackerProcessor
   {
@@ -14,13 +16,31 @@
       if (args.Session == null)
       {
         SiteContext site = Context.Site;
-        if ((site != null) && (site.DisplayMode != DisplayMode.Normal))
+        if (XdbSettings.Enabled)
         {
-          args.Session = this.SessionContextManager.EmptySession;
+          if ((site != null) && (site.DisplayMode != DisplayMode.Normal))
+          {
+            args.Session = this.SessionContextManager.EmptySession;
+          }
+          else
+          {
+            args.Session = this.SessionContextManager.GetSession();
+          }
         }
         else
         {
           args.Session = this.SessionContextManager.GetSession();
+          if (args.Session != null)
+          {
+            if (args.Session.Contact != null)
+            {
+              args.Session.Contact.ContactSaveMode = ContactSaveMode.NeverSave;
+            }
+            if (args.Session.Settings != null)
+            {
+              args.Session.Settings.IsTransient = true;
+            }
+          }
         }
       }
     }
